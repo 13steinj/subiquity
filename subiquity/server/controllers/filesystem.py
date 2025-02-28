@@ -438,10 +438,12 @@ class FilesystemController(SubiquityController, FilesystemManipulator):
             )
         search_drivers = self.app.base_model.source.search_drivers
         if search_drivers is not SEARCH_DRIVERS_AUTOINSTALL_DEFAULT and search_drivers:
+            log.debug(f"{search_drivers=}")
             has_nvidia_component = False
             for component_name in info.available_kernel_components:
                 if "nvidia" in component_name:
                     has_nvidia_component = True
+            log.debug(f"{has_nvidia_component=}")
             if not has_nvidia_component:
                 log.debug(
                     "Disabling core boot based install options as third-party "
