@@ -94,6 +94,24 @@ class _FakeError:
         raise aiohttp.ClientError(self.data["result"]["message"])
 
 
+def log_json(data, label=None):
+    import json
+    import tempfile
+
+    prefix = "snapd."
+    if label is not None:
+        prefix += label + "."
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        dir="/tmp",
+        prefix=prefix,
+        suffix=".json",
+        delete=False,
+        delete_on_close=False,
+    ) as fp:
+        json.dump(data, fp)
+
+
 def make_api_client(async_snapd):
     # subiquity.common.api.client is designed around how to make requests
     # with aiohttp's client code, not the AsyncSnapd API but with a bit of
@@ -107,6 +125,7 @@ def make_api_client(async_snapd):
             content = await async_snapd.get(path[1:], **params)
         else:
             content = await async_snapd.post(path[1:], json, **params)
+        log_json(content, path.replace("/", "_"))
         response = snapd_serializer.deserialize(Response, content)
         if response.type == ResponseType.SYNC:
             content = content["result"]
@@ -130,6 +149,7 @@ async def post_and_wait(client, meth, *args, ann=None, **kw):
         result = await client.v2.changes[change_id].GET()
         if result.status == TaskStatus.DONE:
             data = result.data
+            log_json(data)
             if ann is not None:
                 data = snapd_serializer.deserialize(ann, data)
             return data
