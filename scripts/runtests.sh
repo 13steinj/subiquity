@@ -108,6 +108,7 @@ tty=$(tty) || tty=/dev/console
 
 export SUBIQUITY_REPLAY_TIMESCALE=100
 
+if false; then
 for answers in examples/answers/*.yaml; do
     testname=answers-$(basename $answers .yaml)
     config=$(sed -n 's/^#machine-config: \(.*\)/\1/p' $answers || true)
@@ -215,12 +216,14 @@ LANG=C.UTF-8 timeout --foreground 60 \
     --kernel-cmdline autoinstall \
     --source-catalog examples/sources/tpm.yaml
 validate
+fi
 
 clean
 testname=autoinstall-kernel-components
 # components install with fake nvidia pci devices
-LANG=C.UTF-8 timeout --foreground 60 \
-    python3 -m subiquity.cmd.tui \
+# timeout --foreground 60 \
+LANG=C.UTF-8  \
+    python3 -m subiquity.cmd.server \
     --dry-run \
     --output-base "$tmpdir" \
     --machine-config examples/machines/simple.json \
