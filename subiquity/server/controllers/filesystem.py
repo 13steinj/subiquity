@@ -541,7 +541,8 @@ class FilesystemController(SubiquityController, FilesystemManipulator):
         if self.reset_partition_only:
             return
         if not self.model.is_root_mounted():
-            raise Exception("autoinstall config did not mount root")
+            from pprint import pformat
+            raise Exception(f"autoinstall config did not mount root\n{pformat(self.model._all())}")
         if self.model.needs_bootloader_partition():
             raise Exception(
                 "autoinstall config did not create needed bootloader partition"

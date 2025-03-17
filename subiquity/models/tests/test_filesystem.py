@@ -1471,11 +1471,12 @@ class TestCanmount(SubiTestCase):
         property_yaml = f"canmount: {value}"
         properties = yaml.safe_load(property_yaml)
         for default in (True, False):
-            self.assertEqual(
-                expected,
-                get_canmount(properties, default),
-                f"yaml {property_yaml} default {default}",
-            )
+            for noauto_val in (True, False):
+                self.assertEqual(
+                    expected,
+                    get_canmount(properties, default, noauto_val),
+                    f"yaml {property_yaml} default {default}",
+                )
 
     @parameterized.expand(
         (
@@ -1486,11 +1487,12 @@ class TestCanmount(SubiTestCase):
     def test_not_present(self, property_yaml):
         properties = yaml.safe_load(property_yaml)
         for default in (True, False):
-            self.assertEqual(
-                default,
-                get_canmount(properties, default),
-                f"yaml {property_yaml} default {default}",
-            )
+            for noauto_val in (True, False):
+                self.assertEqual(
+                    default,
+                    get_canmount(properties, default, noauto_val),
+                    f"yaml {property_yaml} default {default}",
+                )
 
     @parameterized.expand(
         (
@@ -1502,7 +1504,7 @@ class TestCanmount(SubiTestCase):
     def test_invalid(self, value):
         with self.assertRaises(ValueError):
             properties = yaml.safe_load(f"canmount: {value}")
-            get_canmount(properties, False)
+            get_canmount(properties, False, False)
 
 
 class TestZPool(SubiTestCase):

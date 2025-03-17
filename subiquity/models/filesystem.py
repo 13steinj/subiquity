@@ -1353,16 +1353,19 @@ class Mount:
         return True
 
 
-def get_canmount(properties: Optional[dict], default: bool) -> bool:
+def get_canmount(properties: Optional[dict], default: bool, noauto: bool) -> bool:
     """Handle the possible values of the zfs canmount property, which should be
     on/off/noauto.  Due to yaml handling, on/off may be turned into a bool, so
-    handle that also."""
+    handle that also. noauto has different choices because curtin mounts noauto-datasets
+    if they are explicitly created (not the implicit root dataset from the zpool),
+    though advanced usage of noauto-datasets may require additional late-commands
+    to successfully perform a first-boot."""
     if properties is None:
         return default
     vals = {
         "on": True,
         "off": False,
-        "noauto": False,
+        "noauto": noauto,
         True: True,
         False: False,
     }
@@ -1403,7 +1406,7 @@ class ZPool:
 
     @property
     def canmount(self):
-        return get_canmount(self.fs_properties, False)
+        return get_canmount(self.fs_properties, False, False)
 
     @property
     def path(self):
@@ -1437,11 +1440,17 @@ class ZFS:
 
     @property
     def canmount(self):
-        return get_canmount(self.properties, False)
+        return get_canmount(self.properties, True, True)  # used for mounting logic
 
     @property
     def path(self):
-        if self.canmount:
+        # this is technically incorrect logic. Child datasets determine
+        # their mounted path from parent mountpoint, as if trimming the
+        # datasets' "volume" (name) shared path prefix, then joining
+        # the result to the parent mountpoint. However, for the sake of
+        # testing directories this is fine, and for generating a curtin
+        # config, datasets that follow this scheme haven't been emitted
+        if self.canmount and self.properties:
             return self.properties.get("mountpoint", self.volume)
         else:
             return None
@@ -2106,7 +2115,9 @@ class FilesystemModel:
         self.reset()
 
     def _matcher(self, kw):
+        from pprint import pformat
         for a in self._actions:
+            log.debug(f"{pformat(kw)} being checked against {pformat(a)}")
             for k, v in kw.items():
                 if getattr(a, k) != v:
                     break
@@ -2344,6 +2355,7 @@ class FilesystemModel:
 
     def _mount_for_path(self, path):
         for typename in MountlikeNames:
+            log.info(f"checking for {typename} at {path}")
             mount = self._one(type=typename, path=path)
             if mount is not None:
                 return mount
